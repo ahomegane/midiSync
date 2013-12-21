@@ -33,19 +33,16 @@
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 
-   <!-- midi.js package -->
-   <script src="./midijs/js/MIDI/AudioDetect.js" type="text/javascript"></script>
-   <script src="./midijs/js/MIDI/LoadPlugin.js" type="text/javascript"></script>
-   <script src="./midijs/js/MIDI/Plugin.js" type="text/javascript"></script>
-   <script src="./midijs/js/MIDI/Player.js" type="text/javascript"></script>
-   <script src="./midijs/js/Window/DOMLoader.XMLHttp.js" type="text/javascript"></script>
-   <script src="./midijs/js/Window/DOMLoader.script.js" type="text/javascript"></script>
-   <!-- extras -->
-   <script src="./midijs/inc/Base64.js" type="text/javascript"></script>
-   <script src="./midijs/inc/base64binary.js" type="text/javascript"></script>
-  <script type="text/javascript">
-
-  </script>
+  <!-- midi.js package -->
+  <script src="./midijs/js/MIDI/AudioDetect.js" type="text/javascript"></script>
+  <script src="./midijs/js/MIDI/LoadPlugin.js" type="text/javascript"></script>
+  <script src="./midijs/js/MIDI/Plugin.js" type="text/javascript"></script>
+  <script src="./midijs/js/MIDI/Player.js" type="text/javascript"></script>
+  <script src="./midijs/js/Window/DOMLoader.XMLHttp.js" type="text/javascript"></script>
+  <script src="./midijs/js/Window/DOMLoader.script.js" type="text/javascript"></script>
+  <!-- extras -->
+  <script src="./midijs/inc/Base64.js" type="text/javascript"></script>
+  <script src="./midijs/inc/base64binary.js" type="text/javascript"></script>
 
   <script type="text/javascript">
 
@@ -56,7 +53,7 @@
 
     MIDI.loadPlugin({
       soundfontUrl: "./midijs/soundfont/",
-      instrument: "acoustic_grand_piano",
+      instrument: ["acoustic_grand_piano", "synth_drum"],
       callback: function() {
         // var delay = 0; // play one note every quarter second
         // var note = 50; // the MIDI note
@@ -64,7 +61,7 @@
         // // play the note
         // MIDI.setVolume(0, 127);
         // MIDI.noteOn(0, note, velocity, delay);
-        // MIDI.noteOff(0, note, delay + 0.75);        
+        // MIDI.noteOff(0, note, delay + 0.75);      
       }
     });
 
@@ -72,21 +69,28 @@
     s.on("connect", function () {});  // 接続時
     s.on("disconnect", function (client) {});  // 切断時
     s.on("S_to_C_message", function (data) {
-      addMessage(data.value);
 
+      // {"0":144,"1":36,"2":127}
       try {
         var o =  JSON.parse(data.value);
+        var str = '';
+        for (var i = 0 in o) {
+            str += "0x" + o[i].toString(16) + " " ;
+        }
+        addMessage(str);
       } catch (e){
-        return
+        addMessage(data.value);
+        return;
       }
       var midiMessage = [];
-      for( i in o ) {
+      for(var i = 0 in o ) {
        midiMessage[i] = o[i];
       }
       var delay = 0;
+      var note = midiMessage[0].toString(16).split('')[0];
       MIDI.setVolume(0, 127);
-      MIDI.noteOn(0, midiMessage[1], midiMessage[2], delay);
-      // MIDI.noteOff(0, midiMessage[1], delay + 0.75);
+      if (note == 9) MIDI.noteOn(0, midiMessage[1], midiMessage[2], delay);
+      if (note == 8) MIDI.noteOff(0, midiMessage[1], delay);
 
       if (! _output) return;
       var buffer = new Uint8Array(midiMessage);

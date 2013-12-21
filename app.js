@@ -27,11 +27,9 @@ var server = http.createServer(function(request, response) {
             response.writeHead(500, {"Content-Type": "text/plain"});
             response.write(err + "\n");
             response.end();
-
         }
     }
-    var uri = url.parse(request.url).pathname
-    , filename = path.join(process.cwd(), uri);
+    var uri = url.parse(request.url).pathname, filename = path.join(process.cwd(), uri);
 
     fs.exists(filename, function(exists){
         console.log(filename+" "+exists);
@@ -41,8 +39,7 @@ var server = http.createServer(function(request, response) {
         fs.readFile(filename, "binary", function(err, file){
         if (err) { Response["500"](err); return ; }
             Response["200"](file, filename);   
-        }); 
-
+        });
     });
 }).listen(process.env.VMC_APP_PORT || 3000);
 
