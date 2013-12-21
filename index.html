@@ -28,40 +28,44 @@
   <h2>midi_out</h2>
   <select id="midi_out">
     <option>選択してください</option>
-  </select>  
+  </select> 
 
-  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <h2>Channel</h2>
+  <select id="midi_channel">
+    <option>0</option>
+    <option>1</option>
+    <option>2</option>
+  </select> 
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-
   <!-- midi.js package -->
-  <script src="./midijs/js/MIDI/AudioDetect.js" type="text/javascript"></script>
-  <script src="./midijs/js/MIDI/LoadPlugin.js" type="text/javascript"></script>
-  <script src="./midijs/js/MIDI/Plugin.js" type="text/javascript"></script>
-  <script src="./midijs/js/MIDI/Player.js" type="text/javascript"></script>
-  <script src="./midijs/js/Window/DOMLoader.XMLHttp.js" type="text/javascript"></script>
-  <script src="./midijs/js/Window/DOMLoader.script.js" type="text/javascript"></script>
-  <!-- extras -->
-  <script src="./midijs/inc/Base64.js" type="text/javascript"></script>
-  <script src="./midijs/inc/base64binary.js" type="text/javascript"></script>
-
-  <script type="text/javascript">
+  <script src="./midijs/js/MIDI/AudioDetect.js"></script>
+  <script src="./midijs/js/MIDI/LoadPlugin.js"></script>
+  <script src="./midijs/js/MIDI/Plugin.js"></script>
+  <script src="./midijs/js/MIDI/Player.js"></script>
+  <script src="./midijs/js/Window/DOMLoader.XMLHttp.js"></script>
+  <script src="./midijs/js/Window/DOMLoader.script.js"></script>
+  <script src="./midijs/inc/Base64.js"></script>
+  <script src="./midijs/inc/base64binary.js"></script>
+  <script>
 
     var _output = null;
 
     //  var s = io.connect(); //リモート
-    var s = io.connect('http://172.19.133.29:3000'); //ローカル
+    var s = io.connect('http://192.168.11.3:3000'); //ローカル
 
     MIDI.loadPlugin({
       soundfontUrl: "./midijs/soundfont/",
-      instrument: ["acoustic_grand_piano", "synth_drum"],
+      instrument: ["woodblock", "acoustic_guitar_steel"],
       callback: function() {
-        // var delay = 0; // play one note every quarter second
-        // var note = 50; // the MIDI note
-        // var velocity = 127; // how hard the note hits
-        // // play the note
-        // MIDI.setVolume(0, 127);
-        // MIDI.noteOn(0, note, velocity, delay);
-        // MIDI.noteOff(0, note, delay + 0.75);      
+        
+        MIDI.programChange(0, 115);
+        MIDI.setVolume(0, 127);
+
+        MIDI.programChange(1, 25);
+        MIDI.setVolume(1, 127); 
+      
       }
     });
 
@@ -86,11 +90,14 @@
       for(var i = 0 in o ) {
        midiMessage[i] = o[i];
       }
-      var delay = 0;
-      var note = midiMessage[0].toString(16).split('')[0];
-      MIDI.setVolume(0, 127);
-      if (note == 9) MIDI.noteOn(0, midiMessage[1], midiMessage[2], delay);
-      if (note == 8) MIDI.noteOff(0, midiMessage[1], delay);
+
+      var delay = 0,
+          note = midiMessage[0].toString(16).split('')[0],
+          channel = midiMessage[0].toString(16).split('')[1];
+      console.log('channel:' + channel + ',' + 'note:' + note);
+
+      if (note == 9) MIDI.noteOn(channel, midiMessage[1], midiMessage[2], delay);
+      if (note == 8) MIDI.noteOff(channel, midiMessage[1], delay);
 
       if (! _output) return;
       var buffer = new Uint8Array(midiMessage);
@@ -133,7 +140,6 @@
 
         inputs = midi.inputs();
         outputs = midi.outputs();
-        console.log(outputs)
         for( var i = 0; i < inputs.length; i++) {
           $("#midi_in").append('<option value="'+ i +'">' + inputs[i]["name"]  + '</option>');
         }
@@ -146,7 +152,6 @@
       }
       $("#midi_in").on("change", function() {
         var port = $("#midi_in option:selected").val();
-        console.log(port);
         inputs[port].onmidimessage = onMIDIMessage;
       });
       $("#midi_out").on("change", function() {
@@ -154,12 +159,13 @@
         _output = outputs[port];
       });
       function onMIDIMessage( event ) {
-        console.log(event);
+        // console.log(event);
         var str = "MIDI message received [" + event.data.length + " bytes]: ";
+        var channel = $('#midi_channel').val();
+        event.data[0] = Number("0x"+(event.data[0] >> 4).toString(16)+channel);
         for (var i=0; i<event.data.length; i++) {
             str += "0x" + event.data[i].toString(16) + " " ;
         }
-        console.log(str);
         // s.emit("C_to_S_broadcast", {value:str});
         // s.emit("C_to_S_broadcast", {value:JSON.stringify(event.data)});
         s.emit("C_to_S_message", {value:JSON.stringify(event.data)});
@@ -167,6 +173,9 @@
 
     })();
   </script>
+
+  <script src="/resource/js/three.min.js"></script>
+  <script src="/resource/js/particle.js"></script>
 
 </body>
 </html>
