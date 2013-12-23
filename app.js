@@ -1,7 +1,8 @@
 var http = require("http")
     url = require("url"),
     path = require("path"),
-    fs = require("fs");
+    fs = require("fs"),
+    mime = require('mime');
 var socketio = require("socket.io");
 
 var server = http.createServer(function(request, response) {
@@ -11,7 +12,8 @@ var server = http.createServer(function(request, response) {
             var header = {
                 "Access-Control-Allow-Origin":"*",
                 "Pragma": "no-cache",
-                "Cache-Control" : "no-cache"       
+                "Cache-Control" : "no-cache",
+                "Content-Type": mime.lookup(filename)      
             }
             response.writeHead(200, header);
             response.write(file, "binary");
@@ -29,10 +31,11 @@ var server = http.createServer(function(request, response) {
             response.end();
         }
     }
-    var uri = url.parse(request.url).pathname, filename = path.join(process.cwd(), uri);
+    var uri = url.parse(request.url).pathname, 
+        filename = path.join(process.cwd(), uri);
 
     fs.exists(filename, function(exists){
-        console.log(filename+" "+exists);
+        // console.log(filename+" "+exists);
         if (!exists) { Response["404"](); return ; }
         if (fs.statSync(filename).isDirectory()) { filename += '/index.html'; }
 

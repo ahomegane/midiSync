@@ -1,45 +1,48 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>node.js chat</title>  
-  <style>
-    *{
-      margin:0;
-      padding:0;
-    }
-  </style>
+  <title>MIDI SYNC</title>
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-  <div id="msg_list" style="height:300px; overflow:auto;"></div>
-  <form action="" method="post" onsubmit="return false;">
-    <input type="text" class="text" style="width:95%; padding:10px" id="message"/>
-    <input type="submit" class="button" style="padding:10px" onclick="sendMessage();" value="みんなに送信" />
-    <input type="submit" class="button" style="padding:10px" onclick="sendBroadcast();" value="自分以外に送信" />
-  </form>
 
-  <div id="info"></div>
+  <div id="stage"></div>
 
-  <h2>midi_in</h2>
-  <select id="midi_in">
-    <option>選択してください</option>
-  </select>
+  <div id="control"><div>
 
-  <h2>midi_out</h2>
-  <select id="midi_out">
-    <option>選択してください</option>
-  </select> 
+    <div id="info"></div>
 
-  <h2>Channel</h2>
-  <select id="midi_channel">
-    <option>0</option>
-    <option>1</option>
-    <option>2</option>
-  </select> 
+    <h2>MIDI In</h2>
+    <select id="midi_in">
+      <option>選択してください</option>
+    </select>
 
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <h2>MIDI Send Channel</h2>
+    <select id="midi_channel">
+    </select>
+
+    <h2>MIDI Out</h2>
+    <select id="midi_out">
+      <option>選択してください</option>
+    </select> 
+
+    <h2>Message</h2>
+    <div id="messenger">
+      <form action="" method="post" onsubmit="return false;">
+        <input type="text" id="message"/>
+        <input type="submit" id="send_all" value="みんなに送信" />
+        <input type="submit" id="send_broadcast" value="自分以外に送信" />
+      </form>
+      <div id="message_list"></div>
+    </div>
+
+  </div></div>
+
+  <script src="./js/jquery-1.10.2.min.js"></script>
+  <!-- socket.io --> 
   <script src="/socket.io/socket.io.js"></script>
-  <!-- midi.js package -->
+  <!-- midi.js -->
   <script src="./midijs/js/MIDI/AudioDetect.js"></script>
   <script src="./midijs/js/MIDI/LoadPlugin.js"></script>
   <script src="./midijs/js/MIDI/Plugin.js"></script>
@@ -48,134 +51,17 @@
   <script src="./midijs/js/Window/DOMLoader.script.js"></script>
   <script src="./midijs/inc/Base64.js"></script>
   <script src="./midijs/inc/base64binary.js"></script>
+  <!-- three.js --> 
+  <script src="./threejs/three.min.js"></script>
+  <script src="./threejs/Detector.js"></script>
+  <script src="./threejs/libs/stats.min.js"></script>
+
+  <!-- main -->
+  <script src="./js/particle.js"></script>
   <script>
-
-    var _output = null;
-
-    //  var s = io.connect(); //リモート
-    var s = io.connect('http://192.168.11.3:3000'); //ローカル
-
-    MIDI.loadPlugin({
-      soundfontUrl: "./midijs/soundfont/",
-      instrument: ["woodblock", "acoustic_guitar_steel"],
-      callback: function() {
-        
-        MIDI.programChange(0, 115);
-        MIDI.setVolume(0, 127);
-
-        MIDI.programChange(1, 25);
-        MIDI.setVolume(1, 127); 
-      
-      }
-    });
-
-    //サーバから受け取るイベント
-    s.on("connect", function () {});  // 接続時
-    s.on("disconnect", function (client) {});  // 切断時
-    s.on("S_to_C_message", function (data) {
-
-      // {"0":144,"1":36,"2":127}
-      try {
-        var o =  JSON.parse(data.value);
-        var str = '';
-        for (var i = 0 in o) {
-            str += "0x" + o[i].toString(16) + " " ;
-        }
-        addMessage(str);
-      } catch (e){
-        addMessage(data.value);
-        return;
-      }
-      var midiMessage = [];
-      for(var i = 0 in o ) {
-       midiMessage[i] = o[i];
-      }
-
-      var delay = 0,
-          note = midiMessage[0].toString(16).split('')[0],
-          channel = midiMessage[0].toString(16).split('')[1];
-      console.log('channel:' + channel + ',' + 'note:' + note);
-
-      if (note == 9) MIDI.noteOn(channel, midiMessage[1], midiMessage[2], delay);
-      if (note == 8) MIDI.noteOff(channel, midiMessage[1], delay);
-
-      if (! _output) return;
-      var buffer = new Uint8Array(midiMessage);
-      _output.send(buffer);
-    });
-
-    //クライアントからイベント送信（イベント名は自由に設定できます）
-    function sendMessage() {
-      var msg = $("#message").val(); //取得
-      $("#message").val(""); //空白にする
-      s.emit("C_to_S_message", {value:msg}); //サーバへ送信
-    }
-
-    function sendBroadcast() {
-      var msg = $("#message").val(); //取得
-      $("#message").val(""); //空白にする
-      s.emit("C_to_S_broadcast", {value:msg}); // サーバへ送信
-    }
-
-    //jqueryでメッセージを追加
-    function addMessage (value,color,size) {
-      var msg = value.replace( /[!@$%<>'"&|]/g, '' ); //タグ記号とかいくつか削除
-      $("#msg_list").prepend("<div class='msg'>" + msg + "</div>");
-    }
-
-    (function() {
-      var midi = null;
-      var inputs = null;
-      var outputs = null;
-
-      try {
-        navigator.requestMIDIAccess().then( onMIDISuccess, onMIDIFailure);
-      } catch (e) {
-        $("#info").append("<p>お使いのブラウザはWEB MIDI APIに対応していません。WEB MIDI APIを実装したブラウザでご覧ください。<br/>Google Chrome Mac版を利用ください。</p>");
-        console.log(e);
-      }
-      function onMIDISuccess(midiAccess) {
-        console.log( "MIDI ready!" );
-        midi = midiAccess;
-
-        inputs = midi.inputs();
-        outputs = midi.outputs();
-        for( var i = 0; i < inputs.length; i++) {
-          $("#midi_in").append('<option value="'+ i +'">' + inputs[i]["name"]  + '</option>');
-        }
-        for( var i = 0; i < outputs.length; i++) {
-          $("#midi_out").append('<option value="'+ i +'">' + outputs[i]["name"]  + '</option>');
-        }
-      }
-      function onMIDIFailure(msg) {
-        console.log( "Failed to get MIDI access - " + msg );
-      }
-      $("#midi_in").on("change", function() {
-        var port = $("#midi_in option:selected").val();
-        inputs[port].onmidimessage = onMIDIMessage;
-      });
-      $("#midi_out").on("change", function() {
-        var port = $("#midi_out option:selected").val();
-        _output = outputs[port];
-      });
-      function onMIDIMessage( event ) {
-        // console.log(event);
-        var str = "MIDI message received [" + event.data.length + " bytes]: ";
-        var channel = $('#midi_channel').val();
-        event.data[0] = Number("0x"+(event.data[0] >> 4).toString(16)+channel);
-        for (var i=0; i<event.data.length; i++) {
-            str += "0x" + event.data[i].toString(16) + " " ;
-        }
-        // s.emit("C_to_S_broadcast", {value:str});
-        // s.emit("C_to_S_broadcast", {value:JSON.stringify(event.data)});
-        s.emit("C_to_S_message", {value:JSON.stringify(event.data)});
-      }      
-
-    })();
+    window._address = 'http://192.168.11.2:3000';
   </script>
-
-  <script src="/resource/js/three.min.js"></script>
-  <script src="/resource/js/particle.js"></script>
+  <script src="./js/main.js"></script>
 
 </body>
 </html>
