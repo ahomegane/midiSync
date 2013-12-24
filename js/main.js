@@ -1,9 +1,5 @@
 (function() {
 
-  // ソース整理
-  // パーティクル
-  // 楽器の追加
-
   var MidiSync = function() {
     return this;
   }
@@ -43,7 +39,7 @@
       this.setMessageEvent();
 
       // particle
-      this.particle = new window._Particle('stage', 20000, 400, 10);
+      this.particle = new window._Particle('stage', 30000, 400, 10);
       this.particle
         .init()
         .rotation(1.5, 0.25, 0.5);
@@ -61,19 +57,26 @@
 
     loadMidiFile: function(callback) {
       var _this = this;
-
-      var instrument = ['acoustic_guitar_steel', 'woodblock'];
+      var instrument = ['bright_acoustic_piano', 'synth_drum', 'alto_sax', 'melodic_tom', 'music_box', 'fx_3_crystal'];
       
+      // https://en.wikipedia.org/wiki/General_MIDI
       MIDI.loadPlugin({
         soundfontUrl: './midijs/soundfont/',
         instrument: instrument,
         callback: function() {
           // 0
-          MIDI.programChange(0, 25);
-          MIDI.setVolume(0, 127);
+          MIDI.programChange(0, 1);
+          // MIDI.setVolume(0, 127);
           // 1
-          MIDI.programChange(1, 115);
-          MIDI.setVolume(1, 127);
+          MIDI.programChange(1, 118);
+          // 2
+          MIDI.programChange(2, 65);
+          // 3
+          MIDI.programChange(3, 117);
+          // 4
+          MIDI.programChange(4, 10);
+          // 5
+          MIDI.programChange(5, 98);
 
           // channel プルダウン初期化
           for( var i = 0; i < instrument.length; i++) {
@@ -178,48 +181,63 @@
       
       this.socket.on('S_to_C_message', function (data) {
 
-        // ※※編集予定
+        // {"0":144,"1":29,"2":127} 
+        var data = data.value;
 
-        // {'0':144,'1':36,'2':127}
         try {
-          var o =  JSON.parse(data.value);
-          var str = '';
-          for (var i = 0 in o) {
-              str += '0x' + o[i].toString(16) + ' ' ;
-          }
-          _this.addMessage(str);
-        } catch (e){
-          _this.addMessage(data.value);
+          var messageObj =  JSON.parse(data);
+        } catch (e) {
+          _this.addMessage(data);
           return;
         }
 
-        var midiMessage = [];
-        for(var i = 0 in o ) {
-          midiMessage[i] = o[i];
+        // 数値をメッセージウインドウに表示表示
+        var str = '';
+        for (var i = 0 in messageObj) {
+            str += '0x' + messageObj[i].toString(16) + ' ' ;
         }
-        var delay = 0,
-            note = midiMessage[0].toString(16).split('')[0],
-            channel = midiMessage[0].toString(16).split('')[1];
-        console.log('channel:' + channel + ',' + 'note:' + note);
-        console.log(midiMessage[1], midiMessage[2]);
+        _this.addMessage(str);
 
+        // 配列に変換
+        var midiMessage = [];
+        for(var i = 0 in messageObj) {
+          midiMessage[i] = messageObj[i];
+        }
+
+        // parse
+        var note = midiMessage[0].toString(16).split('')[0],
+            channel = midiMessage[0].toString(16).split('')[1],
+            position = midiMessage[1],
+            velocity = midiMessage[2],
+            delay = 0;
+
+        console.log([
+          'note:' + note,
+          'channel:' + channel,
+          'position:' + position,
+          'velocity:' + velocity
+        ].join(', '));
+
+        // noteOn
         if (note == 9) {
-          MIDI.noteOn(channel, midiMessage[1], midiMessage[2], delay);
-
+          MIDI.noteOn(channel, position, velocity, delay);
           _this.particle
-            .expand(midiMessage[1]/30)
+            .expand(position / 30)
             .changeColor(1);
 
+        // noteOff
         } else if (note == 8) {
-          MIDI.noteOff(channel, midiMessage[1], delay);
+          MIDI.noteOff(channel, position, delay);
           _this.particle
-            .changeOneColor(midiMessage[1]*6, midiMessage[1]*6, midiMessage[1]*6);
+            .changeOneColor(position*6, position*6, position*6);
         }
 
+        // midiOutput
         if (_this.output) {
           var buffer = new Uint8Array(midiMessage);
           _this.output.send(buffer);
         }
+
       });
     },
 

@@ -26,7 +26,7 @@
       this.translate = {};
       setTimeout(function() {
         _this.tick();
-      }, 1500);
+      }, 1000);
 
       return this;
     },
@@ -128,38 +128,6 @@
       }
       oneFrame();
     },
-
-    // _sortCircle: function() {
-    //   var n = this.size,
-    //       n2 = n / 2;
-    //   for ( var i = 0; i < this.length; i++ ) {
-    //     // position
-    //     var position = this.geometry.vertices[i];
-    //     var x = Math.random() * n / 2;
-    //     x = Math.random() > 0.5 ? -x : x;
-    //     var y = Math.random() * n / 2;
-    //     y = Math.random() > 0.5 ? y * -1 : y;        
-    //     var z = Math.random() * n / 2;
-    //     z = Math.random() > 0.5 ? z * -1 : z;
-    //     position.x = x;
-    //     position.y = y;
-    //     position.z = z;
-
-    //     // colors
-    //     var vx = ( x / n ) + 0.5;
-    //     var vy = ( y / n ) + 0.5;
-    //     var vz = ( z / n ) + 0.5;
-    //     var color = new THREE.Color();
-    //     color.setRGB( vx, vy, vz );
-    //     this.geometry.colors[i] = color;
-    //   }
-    //   this.geometry.computeBoundingSphere();      
-    // },
-
-    // sortCircle: function() {
-    //   this._sortCircle();
-    //   return this;
-    // },
 
     _rotaion: function(v, x, y) {
       v = v || 1;
@@ -304,12 +272,4 @@
 
   window._Particle = Particle;
 
-  // particle = new Particle('stage', 20000, 400, 10);
-  // particle.init();
-  // particle.rotation(1.5, 0.25, 0.5);
-  // particle.expand(1.05, 500);
-  // particle.changeColor(0.2);
-  // particle.changeOneColor(255, 0, 255);  
-  // particle.setAxisHelper(); 
-
-cccc})();
+})();
