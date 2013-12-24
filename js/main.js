@@ -52,6 +52,10 @@
       // particle.changeColor(0.2);
       // particle.changeOneColor(255, 0, 255);  
       // particle.setAxisHelper(); 
+      //
+      document.addEventListener("click", function(){
+        _this.particle.expand()
+      }, false);
 
     },
 

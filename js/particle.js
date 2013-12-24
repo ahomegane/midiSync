@@ -3,7 +3,7 @@
   if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
   var Particle = function(id, length, size, particleSize) {
-    this.length = 20000 || length;
+    this.length = 15000 || length;
     this.size = size || 400;
     this.particleSize = particleSize || 10;
     this.id = id;
@@ -53,7 +53,11 @@
         var x = Math.random() * n - n2;
         var y = Math.random() * n - n2;
         var z = Math.random() * n - n2;
-        this.geometry.vertices.push(new THREE.Vector3( x, y, z ));
+
+        v = new THREE.Vector3( x, y, z ).normalize().setLength( 400 )
+        v.ov = v.clone()
+
+        this.geometry.vertices.push(v);
 
         // colors
         var vx = ( x / n ) + 0.5;
@@ -182,21 +186,73 @@
 
     _expand: function(v, end) {
       v = v || 1.1;
-      var outline = 0;
+      var vertices = this.geometry.vertices;
       for ( var i = 0; i < this.length; i++ ) {
-        var position = this.geometry.vertices[i];        
-        position.x *= v;
-        position.y *= v;
-        position.z *= v;
-        var _outline = Math.max(Math.abs(position.x), Math.abs(position.y), Math.abs(position.z));
-        if (_outline > outline) outline = _outline;
+        var p = vertices[i], po = p.ov;
+        p.x += (po.x - p.x) * 0.1;
+        p.y += (po.y - p.y) * 0.1;
+        p.z += (po.z - p.z) * 0.1;
       }
-      if (end && (v > 1 && outline > end || v < 1 && outline < end)) {
-        this.stopExpand();
+    },
+
+    getRandomVectorNorm: function(){
+      var x,y,z=0;
+      x = Math.random() - 0.5;
+      y = Math.random() - 0.5;
+      z = Math.random() - 0.5;
+      return new THREE.Vector3( x, y, z );
+    },
+
+    getRandomPointOnSphere: function() {
+      var r = 400,
+          d2r = Math.PI/180,
+          radZ = 360*Math.random()*d2r,
+          radX = 360*Math.random()*d2r;
+
+      return new THREE.Vector3(
+        r * Math.sin(radZ)*Math.cos(radX),
+        r * Math.sin(radZ)*Math.sin(radX),
+        r * Math.cos(radZ)
+      );
+    },
+
+    getVectorInRange: function(v, range) {
+      var range = range || 60,
+          ret = [],
+          vertices = this.geometry.vertices;
+
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i];
+        if( p.distanceToSquared(v) < range*range ) {
+          ret.push(p);
+        }
+      }
+      return ret;
+    },
+
+    explode: function(){
+      var v = this.getRandomPointOnSphere(),
+          arr = this.getVectorInRange(v, 300),
+          p, i = 0, len = arr.length;
+      for(;i<len;i++) {
+        p = arr[i];
+        p.add( this.getRandomVectorNorm().setLength( 500*Math.random() ));
+      }
+    },
+
+    beat: function(){
+      var vertices = this.geometry.vertices;
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i]
+        p.x *= 1 + .6*Math.random();
+        p.y *= 1 + .6*Math.random();
+        p.z *= 1 + .6*Math.random();
       }
     },
 
     expand: function(v, end) {
+      this.beat();
+      this.explode();
       var _this = this;
       this.translate['expand'] = function() {
         _this._expand(v, end);
@@ -256,4 +312,4 @@
   // particle.changeOneColor(255, 0, 255);  
   // particle.setAxisHelper(); 
 
-})();
+cccc})();
