@@ -1,7 +1,6 @@
 (function() {
 
   // ソース整理
-  // 勝手に０番目をインアウトに
   // パーティクル
   // 楽器の追加
 
@@ -11,15 +10,32 @@
   MidiSync.prototype = {
 
     init: function() {
-      
-      // midi.js 音源ファイルのロード
-      this.loadMidiFile(function() {
+      var _this = this;
 
-      });
+      this.$alert = $('#alert');
+      this.$control = $('#control');
+      this.$midiConf = $('#midi_conf');
+      this.$midiIn = $('#midi_in');
+      this.$midiOut = $('#midi_out');
+      this.$midiChannel = $('#midi_channel');
+      this.$message = $('#message');
+      this.$sendAll = $('#send_all');
+      this.$sendBroadcast = $('#send_broadcast');
+      this.$messageList = $('#message_list');
 
       // web midi api
-      this.midiAccess();
-      
+      this.canMidi = this.midiAccess();
+
+      if (this.canMidi) {
+        // midi.js 音源ファイルのロード
+        this.loadMidiFile(function() {
+          _this.$midiConf.css({display: 'block'});
+          _this.$control.css({display: 'block'});
+        });
+      } else {
+        _this.$control.css({display: 'block'});
+      }
+
       // socket.io
       this.socket = io.connect(window._address); //ローカル
       // this.socket = io.connect(); //リモート
@@ -42,20 +58,23 @@
     loadMidiFile: function(callback) {
       var _this = this;
 
-      var instrument = ['woodblock', 'acoustic_guitar_steel'];
+      var instrument = ['acoustic_guitar_steel', 'woodblock'];
       
       MIDI.loadPlugin({
         soundfontUrl: './midijs/soundfont/',
         instrument: instrument,
         callback: function() {
           // 0
-          MIDI.programChange(0, 115);
+          MIDI.programChange(0, 25);
           MIDI.setVolume(0, 127);
           // 1
-          MIDI.programChange(1, 25);
+          MIDI.programChange(1, 115);
           MIDI.setVolume(1, 127);
 
-          _this.initChannel(instrument.length);
+          // channel プルダウン初期化
+          for( var i = 0; i < instrument.length; i++) {
+            _this.$midiChannel.append('<option value="' + i + '">' + instrument[i]  + '</option>');
+          }
 
           if(callback) callback();
         }
@@ -63,14 +82,9 @@
 
     },
 
-    initChannel: function(l) {
-      for( var i = 0; i < l; i++) {
-        $('#midi_channel').append('<option value="' + i + '">Channel ' + i  + '</option>');
-      }
-    },
-
     midiAccess: function() {
       var _this = this;
+
       try {
         navigator
           .requestMIDIAccess()
@@ -79,58 +93,71 @@
           }, function(errorMessage) {
             _this.onMidiFailure(errorMessage);
           });
+
       } catch (e) {
-        $('#info').append('<p>お使いのブラウザはWEB MIDI APIに対応していません。</p>');
-        this.canMidi = false;
-        return;
+        this.alert.append('<p>お使いのブラウザはWEB MIDI APIに対応していません。</p>');
+        return false;
       }
-      this.canMidi = true;
-      return;
+      return true;
     },
 
     onMidiSuccess: function(midiAccess) {
       var _this = this;
 
-      console.log( 'MIDI ready!' );
+      console.log('MIDI ready');
       this.midi = midiAccess;
-
-      var $midiIn = $('#midi_in'),
-          $midiOut = $('#midi_out');
 
       // プルダウン初期化
       this.inputs = this.midi.inputs();
       for( var i = 0; i < this.inputs.length; i++) {
-        $midiIn.append('<option value="' + i + '">' + this.inputs[i]['name']  + '</option>');
+        this.$midiIn.append('<option value="' + i + '">' + this.inputs[i]['name']  + '</option>');
       }
       this.outputs = this.midi.outputs();      
       for( var i = 0; i < this.outputs.length; i++) {
-        $midiOut.append('<option value="' + i + '">' + this.outputs[i]['name']  + '</option>');
+        this.$midiOut.append('<option value="' + i + '">' + this.outputs[i]['name']  + '</option>');
       }
 
-      // ポート変更のイベントをセット
-      $midiIn.on('change', function() {
-        var port = $(this).find('option:selected').val();
+      // input/output/channelの初期化
+      this.inputs[0].addEventListener('midimessage', function(e) {
+        _this.onMidiMessage(e);
+      });
+      _this.output = _this.outputs[0];
+      _this.channel = 0;
+
+      // channel変更
+      this.$midiIn.on('change', function() {
+        var port = $(this).val();
         _this.inputs[port].addEventListener('midimessage', function(e) {
           _this.onMidiMessage(e);
         });
       });
-      $midiOut.on('change', function() {
-        var port = $(this).find('option:selected').val();
+      this.$midiOut.on('change', function() {
+        var port = $(this).val();
         _this.output = _this.outputs[port];
       });
+
+      // channel変更
+      this.$midiChannel.on('change', function() {
+        _this.channel = $(this).val();
+      });
+
     },
 
     onMidiMessage: function(e) {
-      var str = 'MIDI message received [' + e.data.length + ' bytes]: ';
+      var midiMessage = e.data;
 
-      var channel = $('#midi_channel').val();
-      e.data[0] = Number('0x'+(e.data[0] >> 4).toString(16)+channel);
-
-      for (var i=0; i<e.data.length; i++) {
-          str += '0x' + e.data[i].toString(16) + ' ' ;
+      // console
+      var str = 'MIDI message received [' + midiMessage.length + ' bytes]: ';
+      for (var i=0; i<midiMessage.length; i++) {
+        str += '0x' + midiMessage[i].toString(16) + ' ' ;
       }
-      // this.socket.emit('C_to_S_broadcast', {value:JSON.stringify(e.data)});
-      this.socket.emit('C_to_S_message', {value:JSON.stringify(e.data)});
+      console.log(str);
+
+      // channel指定
+      midiMessage[0] = Number('0x'+(midiMessage[0] >> 4).toString(16) + this.channel);
+
+      // this.socket.emit('C_to_S_broadcast', {value:JSON.stringify(midiMessage)});
+      this.socket.emit('C_to_S_message', {value:JSON.stringify(midiMessage)});
     },    
 
     onMidiFailure: function(message) {
@@ -177,7 +204,8 @@
 
           _this.particle
             .expand(midiMessage[1]/30)
-            .changeColor(1);       
+            .changeColor(1);
+
         } else if (note == 8) {
           MIDI.noteOff(channel, midiMessage[1], delay);
           _this.particle
@@ -193,24 +221,25 @@
 
     addMessage: function(value) {
       var message = value.replace( /[!@$%<>'"&|]/g, '' ); //タグ記号とかいくつか削除
-      $('#message_list').prepend('<div>' + message + '</div>');
+      this.$messageList.prepend('<div>' + message + '</div>');
     },
 
     setMessageEvent: function() {
       var _this = this;
-      var $message = $('#message');
       
-      $('#send_all').on('click', function() {
-        var message = $message.val();
-        $message.val('');
-        _this.socket.emit('C_to_S_message', {value:message});
+      this.$sendAll.on('click', function() {
+        var message = _this.$message.val();
+        if (message == '') return false;
+        _this.$message.val('');
+        _this.socket.emit('C_to_S_message', { value: message });
         return false;
       });
 
-      $('#send_broadcast').on('click', function() {
-        var message = $message.val();
-        $message.val('');
-        _this.socket.emit('C_to_S_broadcast', {value:message});
+      this.$sendBroadcast.on('click', function() {
+        var message = _this.$message.val();
+        if (message == '') return false;
+        _this.$message.val('');
+        _this.socket.emit('C_to_S_broadcast', { value: message });
         return false;
       });
 

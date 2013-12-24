@@ -72,13 +72,15 @@ body {
   right: 0;
   background: rgba(16, 16, 16, .5);
   width: 300px;
+  display: none;
 }
 #control > div {
   padding: 20px;
   padding-top: 5px;
 }
-#info {
+#alert {
   margin-top: 15px;
+  color: rgb(255, 255, 0);
 }
 #control select {
   margin-top: 5px;
@@ -86,11 +88,16 @@ body {
 #control h2 {
   margin-top: 15px;
 }
-#messenger {
-  margin-top: 5px;
+#midi_conf {
+  display: none;
+}
+.messenger {
   width: 100%;
 }
-#messenger input[type="submit"] {
+.messenger form {
+  margin-top: 5px;
+}
+.messenger input[type="submit"] {
   margin-top: 5px;
   margin-right: 10px;
 }
