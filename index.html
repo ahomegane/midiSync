@@ -9,35 +9,37 @@
 
   <div id="stage"></div>
 
-  <div id="control"><div>
+  <div id="control">
+    <div>
 
-    <div id="alert"></div>
+      <div id="alert"></div>
 
-    <div id="midi_conf">
-      <h2>MIDI In</h2>
-      <select id="midi_in">
-      </select>
+      <div id="midi_conf">
+        <h2>MIDI In</h2>
+        <select id="midi_in">
+        </select>
 
-      <h2>MIDI Out</h2>
-      <select id="midi_out">
-      </select>
+        <h2>MIDI Out</h2>
+        <select id="midi_out">
+        </select>
 
-      <h2>Channel</h2>
-      <select id="midi_channel">
-      </select>   
+        <h2>Channel</h2>
+        <select id="midi_channel">
+        </select>   
+      </div>
+
+      <div class="messenger">
+        <h2>Message</h2>
+        <form action="" method="post" onsubmit="return false;">
+          <input type="text" id="message"/>
+          <input type="submit" id="send_all" value="みんなに送信" />
+          <input type="submit" id="send_broadcast" value="自分以外に送信" />
+        </form>
+        <div id="message_list"></div>
+      </div>
+
     </div>
-
-    <div class="messenger">
-      <h2>Message</h2>
-      <form action="" method="post" onsubmit="return false;">
-        <input type="text" id="message"/>
-        <input type="submit" id="send_all" value="みんなに送信" />
-        <input type="submit" id="send_broadcast" value="自分以外に送信" />
-      </form>
-      <div id="message_list"></div>
-    </div>
-
-  </div></div>
+  </div>
 
   <script src="./js/jquery-1.10.2.min.js"></script>
   <!-- socket.io --> 
@@ -59,7 +61,8 @@
   <!-- main -->
   <script src="./js/particle.js"></script>
   <script>
-    window._address = 'http://172.19.133.29:3000';
+    // window._address = 'http://172.19.133.29:3000';
+    // window._address = 'http://192.168.11.2:3000';
   </script>
   <script src="./js/main.js"></script>
 

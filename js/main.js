@@ -33,8 +33,11 @@
       }
 
       // socket.io
-      this.socket = io.connect(window._address); //ローカル
-      // this.socket = io.connect(); //リモート
+      if (window._address) {
+        this.socket = io.connect(window._address); //ローカル        
+      } else {
+        this.socket = io.connect(); //リモート
+      }
       this.initServerEvent();
       this.setMessageEvent();
 
@@ -57,7 +60,7 @@
 
     loadMidiFile: function(callback) {
       var _this = this;
-      var instrument = ['bright_acoustic_piano', 'synth_drum', 'alto_sax', 'melodic_tom', 'music_box', 'fx_3_crystal'];
+      var instrument = ['bright_acoustic_piano', 'synth_drum', 'alto_sax', 'melodic_tom'];//, 'music_box', 'fx_3_crystal'
       
       // https://en.wikipedia.org/wiki/General_MIDI
       MIDI.loadPlugin({
@@ -73,10 +76,10 @@
           MIDI.programChange(2, 65);
           // 3
           MIDI.programChange(3, 117);
-          // 4
-          MIDI.programChange(4, 10);
-          // 5
-          MIDI.programChange(5, 98);
+          // // 4
+          // MIDI.programChange(4, 10);
+          // // 5
+          // MIDI.programChange(5, 98);
 
           // channel プルダウン初期化
           for( var i = 0; i < instrument.length; i++) {
@@ -102,7 +105,7 @@
           });
 
       } catch (e) {
-        this.alert.append('<p>お使いのブラウザはWEB MIDI APIに対応していません。</p>');
+        this.$alert.append('<p>お使いのブラウザはWEB MIDI APIに対応していません。</p>');
         return false;
       }
       return true;

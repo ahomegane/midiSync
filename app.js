@@ -44,7 +44,7 @@ var server = http.createServer(function(request, response) {
             Response["200"](file, filename);   
         });
     });
-}).listen(process.env.VMC_APP_PORT || 3000);
+}).listen(process.env.VMC_APP_PORT || 5000);
 
 var io = socketio.listen(server);
 
