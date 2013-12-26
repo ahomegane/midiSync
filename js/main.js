@@ -23,14 +23,12 @@
       this.canMidi = this.midiAccess();
 
       if (this.canMidi) {
-        // midi.js 音源ファイルのロード
-        this.loadMidiFile(function() {
-          _this.$midiConf.css({display: 'block'});
-          _this.$control.css({display: 'block'});
-        });
-      } else {
-        _this.$control.css({display: 'block'});
+        _this.$midiConf.css({display: 'block'});
       }
+      // midi.js 音源ファイルのロード
+      this.loadMidiFile(function() { 
+        _this.$control.css({display: 'block'});
+      });      
 
       // socket.io
       if (window._address) {
