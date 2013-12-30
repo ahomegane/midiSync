@@ -60,18 +60,24 @@ body {
   line-height: 1.4;
   position: relative;
   background: #101010;
+  overflow: hidden;
 }
 
 /* #stage ------------ */
+
+#stage {
+  display: none;
+}
 
 /* #control  ------------ */
 
 #control {
   position: absolute;
   top: 0;
-  right: 0;
+  right: -10px;
   background: rgba(16, 16, 16, .5);
   width: 300px;
+  opacity: 0;
   display: none;
 }
 #control > div {
@@ -79,7 +85,7 @@ body {
   padding-top: 5px;
 }
 #alert {
-  margin-top: 15px;
+  margin-top: 40px;
   color: rgb(255, 255, 0);
 }
 #control select {
@@ -112,6 +118,13 @@ body {
   overflow:auto;
   background: rgba(255,255,255, .05);
   padding: 10px;  
+}
+#demo {
+  display: none;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  color: rgb(255, 0, 255) !important;  
 }
 
 /* module ------------ */

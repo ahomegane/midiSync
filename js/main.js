@@ -27,8 +27,8 @@
       }
       // midi.js 音源ファイルのロード
       this.loadMidiFile(function() { 
-        _this.$control.css({display: 'block'});
-      });      
+        _this.$control.show().animate({right: 0, opacity: 1}, 300, 'swing');        
+      });
 
       // socket.io
       if (window._address) {
@@ -42,23 +42,22 @@
       // particle
       this.particle = new window._Particle('stage', 30000, 400, 10);
       this.particle
-        .init()
-        .rotation(1.5, 0.25, 0.5);
-      // particle.rotation(1.5, 0.25, 0.5);
-      // particle.expand(1.05);
-      // particle.changeColor(0.2);
-      // particle.changeOneColor(255, 0, 255);  
-      // particle.setAxisHelper(); 
-      //
+          .init()
+          .rotation(1.5, 0.25, 0.5)
+          .backOrigin(.2);      
+      setTimeout(function() {
+        $('#stage').fadeIn(800);  
+      }, 2000);
+      
       document.addEventListener("click", function(){
-        _this.particle.expand()
+        _this.particle.expand();
       }, false);
 
     },
 
     loadMidiFile: function(callback) {
       var _this = this;
-      var instrument = ['bright_acoustic_piano', 'synth_drum', 'alto_sax', 'melodic_tom'];//, 'music_box', 'fx_3_crystal'
+      var instrument = ['bright_acoustic_piano', 'synth_drum', 'alto_sax', 'melodic_tom', 'music_box'];//'fx_3_crystal'
       
       // https://en.wikipedia.org/wiki/General_MIDI
       MIDI.loadPlugin({
@@ -74,9 +73,9 @@
           MIDI.programChange(2, 65);
           // 3
           MIDI.programChange(3, 117);
-          // // 4
-          // MIDI.programChange(4, 10);
-          // // 5
+          // 4
+          MIDI.programChange(4, 10);
+          // 5
           // MIDI.programChange(5, 98);
 
           // channel プルダウン初期化
@@ -219,27 +218,56 @@
           'velocity:' + velocity
         ].join(', '));
 
+        // midiOutput
+        if (_this.output) {
+          var buffer = new Uint8Array(midiMessage);
+          _this.output.send(buffer);
+        }        
+
+        if (! MIDI.noteOn) return;
+
         // noteOn
         if (note == 9) {
           MIDI.noteOn(channel, position, velocity, delay);
+          _this.particleTransform(channel);
           _this.particle
             .expand(position / 30)
-            .changeColor(1);
+            .changeOneColor(position*6, position*6, position*6);
 
         // noteOff
         } else if (note == 8) {
           MIDI.noteOff(channel, position, delay);
           _this.particle
-            .changeOneColor(position*6, position*6, position*6);
-        }
-
-        // midiOutput
-        if (_this.output) {
-          var buffer = new Uint8Array(midiMessage);
-          _this.output.send(buffer);
+            .changeColor(1, true);
         }
 
       });
+    },
+
+    particleTransform: function(channel) {
+      var p = this.particle;
+      switch (+channel) {
+        case 0:
+          p.sortCircle()
+            .rotation(1.5, Math.random() * .5, Math.random() * .5);
+          break;
+        case 1:
+          p.sortSquare()
+            .rotation(2, Math.random() * .5, Math.random() * .5);
+          break;
+        case 2:
+          p.sortFillSquare()
+            .rotation(1.5, Math.random() * .5, Math.random() * .5);                    
+          break;
+        case 3:
+          p.sortPlane()
+            .rotation(1.2, Math.random() * .5, Math.random() * .5);
+          break;
+        case 4:
+          p.sortLine()
+            .rotation(2.5, Math.random() * 1, Math.random() * 1);            
+          break;
+      }
     },
 
     addMessage: function(value) {
@@ -270,7 +298,7 @@
 
   }
 
-  var midiSync = new MidiSync;
+  window.midiSync = new MidiSync;
   midiSync.init();
 
 })();

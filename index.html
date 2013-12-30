@@ -30,13 +30,15 @@
 
       <div class="messenger">
         <h2>Message</h2>
-        <form action="" method="post" onsubmit="return false;">
+        <form action="" method="post" onsubmit="return false;" id="message_form">
           <input type="text" id="message"/>
           <input type="submit" id="send_all" value="みんなに送信" />
           <input type="submit" id="send_broadcast" value="自分以外に送信" />
         </form>
         <div id="message_list"></div>
       </div>
+
+      <a id="demo" href="#">> DEMO</a>
 
     </div>
   </div>
@@ -71,6 +73,7 @@
     })();
   </script>
   <script src="./js/main.js"></script>
+  <script src="./js/sample_midi_data.js"></script>  
 
 </body>
 </html>

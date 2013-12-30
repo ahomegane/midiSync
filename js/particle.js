@@ -23,10 +23,11 @@
         _this.resize();
       }, false );
 
-      this.translate = {};
-      setTimeout(function() {
-        _this.tick();
-      }, 1000);
+      this.ticks = {};
+      this.tick();
+
+      this.sortType;
+      this.transformCount = 0;
 
       return this;
     },
@@ -47,16 +48,38 @@
       this.geometry = new THREE.Geometry();
 
       var n = this.size * 2, // 直径
-          n2 = n / 2; // particles spread in the cube
+          n2 = n / 2;
       for ( var i = 0; i < this.length; i++ ) {
-        // positions
+        // positions        
+
+        // plane
+        // var x = Math.random() * n - n2;
+        // var y = Math.random() * n - n2;
+        // var z = 0;
+        // v = new THREE.Vector3( x, y, z );
+
+        // squareFill
+        // var x = Math.random() * n - n2;
+        // var y = Math.random() * n - n2;
+        // var z = Math.random() * n - n2;
+        // v = new THREE.Vector3( x, y, z );
+
+        // square
+        // var a = i % 6;
+        // var x = a == 0 ? n2 : a == 1 ? -n2 : Math.random() * n - n2;
+        // var y = a == 2 ? n2 : a == 3 ? -n2 : Math.random() * n - n2;
+        // var z = a == 4 ? n2 : a == 5 ? -n2 : Math.random() * n - n2;
+        // v = new THREE.Vector3( x, y, z );
+
+        // circle
         var x = Math.random() * n - n2;
         var y = Math.random() * n - n2;
         var z = Math.random() * n - n2;
+        v = new THREE.Vector3( x, y, z ).normalize().setLength(n2 * 1.3);
 
-        v = new THREE.Vector3( x, y, z ).normalize().setLength( 400 )
-        v.ov = v.clone()
+        this.sortType = 'circle';
 
+        v.ov = v.clone();
         this.geometry.vertices.push(v);
 
         // colors
@@ -113,8 +136,8 @@
     },
 
     render: function() {
-      for (var name in this.translate) {
-        if (this.translate[name]) this.translate[name]();
+      for (var name in this.ticks) {
+        if (this.ticks[name]) this.ticks[name]();
       }
       this.renderer.render( this.scene, this.camera );
     },
@@ -141,30 +164,174 @@
 
     rotation: function(v, x, y) {
       var _this = this;
-      this.translate['rotaion'] = function() {
+      this.ticks['rotaion'] = function() {
         _this._rotaion(v, x, y);
       };
       return this;
     },
 
     stopRotaion: function() {
-      delete this.translate['rotaion'];
+      delete this.ticks['rotaion'];
       return this;
     },
 
-    _expand: function(v, end) {
-      v = v || 1.1;
+    changeColor: function(v, isOriginBase) {
+      v = v || 0.5;
+      var n = this.size * 2; // 直径
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = this.geometry.vertices[i], po = p.ov
+        // colors
+        if (isOriginBase) {
+          var vx = ( po.x / n ) + v;
+          var vy = ( po.y / n ) + v;
+          var vz = ( po.z / n ) + v;          
+        } else {
+          var vx = ( p.x / n ) + v;
+          var vy = ( p.y / n ) + v;
+          var vz = ( p.z / n ) + v;
+        }
+        var color = new THREE.Color();
+        color.setRGB( vx, vy, vz );
+        this.geometry.colors[i] = color;
+      }
+      return this;
+    },
+
+    changeOneColor: function(r, g, b) {
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = this.geometry.vertices[i];
+        // colors
+        var color = new THREE.Color();
+        color.setRGB(r / 255, g / 255, b / 255);
+        this.geometry.colors[i] = color;
+      }
+      return this;      
+    },    
+
+    sortLine: function() {
+      if (this.sortType == 'line') return this;
+      this.sortType = 'line';        
+      var n = this.size * 12,
+          n2 = n / 2;
+      var vertices = this.geometry.vertices;
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i], po = p.ov,
+            x, y, z;
+        po.x = Math.random() * n - n2;
+        po.y = 0;
+        po.z = 0;
+      }
+      this.changeColor(null, true);
+      return this;
+    },
+
+    sortPlane: function() {
+      if (this.sortType == 'plane') return this;
+      this.sortType = 'plane';
+      var n = this.size * 6,
+          n2 = n / 2;
+      var vertices = this.geometry.vertices;
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i], po = p.ov,
+            x, y, z;
+        po.x = Math.random() * n - n2;
+        po.y = Math.random() * n - n2;
+        po.z = 0;
+      }
+      this.changeColor(null, true);
+      return this;
+    },
+
+    sortSquare: function() {
+      if (this.sortType == 'square') return this;
+      this.sortType = 'square';      
+      var n = this.size * 2,
+          n2 = n / 2;
       var vertices = this.geometry.vertices;
       for ( var i = 0; i < this.length; i++ ) {
         var p = vertices[i], po = p.ov;
-        p.x += (po.x - p.x) * 0.1;
-        p.y += (po.y - p.y) * 0.1;
-        p.z += (po.z - p.z) * 0.1;
+        var a = i % 6;
+        po.x = a == 0 ? n2 : a == 1 ? -n2 : Math.random() * n - n2;
+        po.y = a == 2 ? n2 : a == 3 ? -n2 : Math.random() * n - n2;
+        po.z = a == 4 ? n2 : a == 5 ? -n2 : Math.random() * n - n2;
+      }
+      this.changeColor(null, true);
+      return this;      
+    },
+
+    sortFillSquare: function() {
+      if (this.sortType == 'fillSquare') return this;
+      this.sortType = 'fillSquare';      
+      var n = this.size * 2,
+          n2 = n / 2;
+      var vertices = this.geometry.vertices;
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i], po = p.ov;
+        po.x = Math.random() * n - n2;
+        po.y = Math.random() * n - n2;
+        po.z = Math.random() * n - n2;
+      }
+      this.changeColor(null, true);
+      return this;      
+    },
+
+    sortCircle: function() {
+      if (this.sortType == 'circle') return this;
+      this.sortType = 'circle';      
+      var n = this.size * 2,
+          n2 = n / 2;
+      var vertices = this.geometry.vertices;
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i], po = p.ov;
+        var v = new THREE.Vector3(
+          Math.random() * n - n2,
+          Math.random() * n - n2,
+          Math.random() * n - n2
+        ).normalize().setLength(n2 * 1.3);
+        po.x = v.x;
+        po.y = v.y;
+        po.z = v.z;
+      }
+      this.changeColor(null, true);
+      return this;       
+    },
+
+    transform: function() {
+      var a = this.transformCount % 4;
+      if (a == 0) this.sortLine();
+      if (a == 1) this.sortSquare();
+      if (a == 2) this.sortCircle();
+      if (a == 3) this.sortPlane();
+      this.transformCount++;
+      return this;      
+    },
+
+    _backOrigin: function(v) {
+      v = v || .1;
+      var vertices = this.geometry.vertices;
+      for ( var i = 0; i < this.length; i++ ) {
+        var p = vertices[i], po = p.ov;
+        p.x += (po.x - p.x) * v;
+        p.y += (po.y - p.y) * v;
+        p.z += (po.z - p.z) * v;
       }
     },
 
+    backOrigin: function(v) {
+      var _this = this;
+      this.ticks['backOrigin'] = function() {
+        _this._backOrigin(v);
+      };
+      return this;
+    },
+
+    stopBackOrigin: function() {
+      delete this.ticks['backOrigin'];
+      return this;
+    },
+
     getRandomVectorNorm: function(){
-      var x,y,z=0;
+      var x, y, z;
       x = Math.random() - 0.5;
       y = Math.random() - 0.5;
       z = Math.random() - 0.5;
@@ -206,70 +373,40 @@
         p = arr[i];
         p.add( this.getRandomVectorNorm().setLength( 500*Math.random() ));
       }
+      return this;      
     },
 
-    beat: function(){
+    beat: function(v){
+      v = v || .6;
       var vertices = this.geometry.vertices;
       for ( var i = 0; i < this.length; i++ ) {
-        var p = vertices[i]
-        p.x *= 1 + .6*Math.random();
-        p.y *= 1 + .6*Math.random();
-        p.z *= 1 + .6*Math.random();
+        var p = vertices[i];
+        p.x *= 1 + v * Math.random();
+        p.y *= 1 + v * Math.random();
+        p.z *= 1 + v * Math.random();
       }
-    },
+      return this;      
+    },    
 
-    expand: function(v, end) {
-      this.beat();
+    expand: function() {
+      this.beat(.6);
       this.explode();
-      var _this = this;
-      this.translate['expand'] = function() {
-        _this._expand(v, end);
-      };
-      return this;
-    },
-
-    stopExpand: function() {
-      delete this.translate['expand'];
-      return this;
-    },
-
-    _changeColor: function(v) {
-      v = v || 0.5;
-      var n = this.size * 2; // 直径
-      for ( var i = 0; i < this.length; i++ ) {
-        var position = this.geometry.vertices[i];
-        // colors
-        var vx = ( position.x / n ) + v;
-        var vy = ( position.y / n ) + v;
-        var vz = ( position.z / n ) + v;
-        var color = new THREE.Color();
-        color.setRGB( vx, vy, vz );
-        this.geometry.colors[i] = color;
-      }
-    },
-
-    changeColor: function(v) {
-      this._changeColor(v);
-      return this;
-    },
-
-    _changeOneColor: function(r, g, b) {
-      for ( var i = 0; i < this.length; i++ ) {
-        var position = this.geometry.vertices[i];
-        // colors
-        var color = new THREE.Color();
-        color.setRGB(r / 255, g / 255, b / 255);
-        this.geometry.colors[i] = color;
-      }
-    },
-
-    changeOneColor: function(r, g, b) {
-      this._changeOneColor(r, g, b);
+      if (! this.ticks['backOrigin']) this.backOrigin(.1);
       return this;
     }
 
   }
 
   window._Particle = Particle;
+
+  // var particle = new _Particle('stage', 30000, 400, 10);
+  // particle
+  //   .init()
+  //   .backOrigin(.2);
+  // particle.rotation(1.5, 0.25, 0.5);
+  // particle.expand(1.05);
+  // particle.changeColor(0.2);
+  // particle.changeOneColor(255, 0, 255);  
+  // particle.setAxisHelper();
 
 })();
